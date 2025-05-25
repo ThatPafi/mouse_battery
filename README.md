@@ -1,4 +1,8 @@
 # Logitech G502 hero X battery checker
+```
+Python 3.13.3  
+Solaar 1.1.14
+``` 
 Used with command output KDE plasma widget.  
 Supports error handling, verbose mode, logging and caching.  
 
