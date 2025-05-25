@@ -1,6 +1,8 @@
 # Logitech G502 hero X battery checker
-Used with command output KDE plasma widget.
+Used with command output KDE plasma widget.  
 Supports error handling, verbose mode, logging and caching.  
+
+Calls Solaar. This script does a very simple ``` match = re.search(r'Battery:\s+(\d+)%' ```, which means it only works if Solaar returns only 1 device battery. If you need it to handle multiple devices, it should be easy to modify. 
 
 ## Usage  
 ```
@@ -18,4 +20,4 @@ options:
                         Optional log file path (defaults to ~/.cache/mouse_battery.log if used without value)
 ```
 ## Alternative run_solaar_show()
-There are 2 differents options for the same function. If there are timeout issues running the default one, switch with the commented allow some handling of the child process. 
+There are 2 differents options for the same function. If there are timeout issues running the default one, switching to the commented one allow some handling of the child process. For more information check difference between ```subprocess.check_output()``` and ```subprocess.run()```.
