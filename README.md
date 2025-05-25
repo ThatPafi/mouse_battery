@@ -4,7 +4,7 @@ Supports error handling, verbose mode, logging and caching.
 
 ## Usage  
 ```
-usage: mouse_battery.py [-h] [--notify] [--ttl TTL] [--verbose {DEBUG,INFO,WARNING,ERROR}] [--log-file [LOG_FILE]]
+mouse_battery.py [-h] [--notify] [--ttl TTL] [--verbose {DEBUG,INFO,WARNING,ERROR}] [--log-file [LOG_FILE]]
 
 Monitor Logitech mouse battery via Solaar.
 
