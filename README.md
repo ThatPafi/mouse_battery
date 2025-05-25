@@ -1,9 +1,9 @@
 # Logitech G502 hero X battery checker
 Used with command output KDE plasma widget.
 Supports error handling, verbose mode, logging and caching.  
-## Flags  
+
+## Usage  
 ```
-$ mouse_battery.py -h
 usage: mouse_battery.py [-h] [--notify] [--ttl TTL] [--verbose {DEBUG,INFO,WARNING,ERROR}] [--log-file [LOG_FILE]]
 
 Monitor Logitech mouse battery via Solaar.
