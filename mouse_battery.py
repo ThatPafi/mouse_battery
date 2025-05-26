@@ -10,21 +10,32 @@ from pathlib import Path
 
 CACHE_FILE = Path.home() / ".cache/mouse_battery.json"
 
-'''
-def run_solaar_show(:)          Alternative to run_solaar_show() to better handle timeout of child process
-    try:
-        output = subprocess.run(["command"], timeout=5, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        print(output.stdout)
-    except subprocess.TimeoutExpired:
-        print("Process timed out")
-'''
+def run_solaar_show(log_to_console=False, log_to_file=False):
+    stderr = subprocess.DEVNULL  # Default: discard stderr to /dev/null
+    if log_to_console or log_to_file:
+        stderr = subprocess.PIPE  # Capture stderr if user wants it
 
-def run_solaar_show():
     try:
-        return subprocess.check_output(["solaar", "show"], stderr=subprocess.DEVNULL).decode()
+        result = subprocess.run(
+            ["solaar", "show"],
+            stdout=subprocess.PIPE,
+            stderr=stderr,
+            timeout=5,
+            check=True
+        )
+        if result.stderr:
+            logging.debug(f"Solaar stderr: {result.stderr.decode().strip()}")
+        return result.stdout.decode()       # stdout returns bytes, .decode() turns it to a string
+    except subprocess.CalledProcessError as e:
+        if e.stderr:
+            logging.debug(f"Solaar failed: {e.stderr.decode().strip()}")
+        else:
+            logging.debug(f"Solaar command failed with code {e.returncode}")
+    except subprocess.TimeoutExpired:
+        logging.warning("Solaar command timed out")
     except Exception as e:
-        logging.debug(f"Solaar command failed: {e}")
-        return None
+        logging.debug(f"Solaar command error: {e}")
+    return None
 
 def parse_battery(solaar_output):
     if solaar_output:
@@ -33,10 +44,10 @@ def parse_battery(solaar_output):
             return int(match.group(1))
     return None
 
-def get_battery_with_retry(retries=2, delay=1.0):
+def get_battery_with_retry(retries=2, delay=1.0, log_to_console=False, log_to_file=False):
     for attempt in range(1, retries + 1):
         logging.debug(f"Attempt {attempt}: reading battery from solaar...")
-        output = run_solaar_show()
+        output = run_solaar_show(log_to_console=log_to_console, log_to_file=log_to_file)
         battery = parse_battery(output)
         if battery is not None:
             logging.info(f"Battery found: {battery}%")
@@ -117,7 +128,7 @@ def send_notification(title, message):
 
 def setup_logging(console_level=None, log_file=None):
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)  # Always capture all logs internally
+    root_logger.setLevel(logging.DEBUG)
     root_logger.handlers.clear()
 
     if console_level:
@@ -127,13 +138,13 @@ def setup_logging(console_level=None, log_file=None):
         console_handler.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
         root_logger.addHandler(console_handler)
     else:
-        # Silence all logging to console if no --verbose flag
-        logging.getLogger().addHandler(logging.NullHandler())
+        root_logger.addHandler(logging.NullHandler())
 
-    if log_file:
-        try:
+    if log_file is not None:
+        # Handle default path only if --log-file is passed without a value
+        if isinstance(log_file, str):
             log_path = Path(log_file).expanduser().resolve()
-        except TypeError:
+        else:
             log_path = Path.home() / ".cache/mouse_battery.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -147,12 +158,29 @@ def main():
     parser.add_argument("--notify", action="store_true", help="Enable critical battery notifications")
     parser.add_argument("--ttl", type=int, default=24, help="Cache TTL in hours (default: 24)")
     parser.add_argument("--verbose", choices=["DEBUG", "INFO", "WARNING", "ERROR"], help="Set log level")
-    parser.add_argument("--log-file", nargs="?", const=str(Path.home() / ".cache/mouse_battery.log"), help="Optional log file path (defaults to ~/.cache/mouse_battery.log if used without value)")
+    parser.add_argument(
+        "--log-file",
+        nargs="?",
+        const=True,  # Will indicate flag was used without a path
+        help="Enable logging to a file. Optionally provide a path (default: ~/.cache/mouse_battery.log)"
+    )
     args = parser.parse_args()
+
+    # Determine path only if --log-file flag was used
+    log_file = None
+    if args.log_file is not None:
+        if isinstance(args.log_file, str):
+            log_file = args.log_file
+        else:
+            log_file = str(Path.home() / ".cache/mouse_battery.log")
+
+    setup_logging(args.verbose, log_file)
 
     setup_logging(args.verbose, args.log_file)
 
-    battery = get_battery_with_retry()
+    log_to_console = args.verbose is not None
+    log_to_file = args.log_file is not None
+    battery = get_battery_with_retry(log_to_console=log_to_console, log_to_file=log_to_file)
     from_cache = False
 
     if battery is not None:
