@@ -23,5 +23,3 @@ options:
   --log-file [LOG_FILE]
                         Optional log file path (defaults to ~/.cache/mouse_battery.log if used without value)
 ```
-## Alternative run_solaar_show()
-There are 2 differents options for the same function. If there are timeout issues running the default one, switching to the commented one allow some handling of the child process. For more information check difference between ```subprocess.check_output()``` and ```subprocess.run()```.
